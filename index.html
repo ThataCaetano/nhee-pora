@@ -81,26 +81,28 @@ input.code{letter-spacing:.35em;text-align:center;font-size:24px}
 select{font:inherit;font-size:15px;padding:8px 10px;border-radius:10px;border:2px solid var(--line);background:var(--card);color:var(--ink)}
 .adm{align-items:flex-start;flex-wrap:wrap}.adm .quem{flex:1 1 200px;overflow-wrap:anywhere}.adm .ctl{display:flex;gap:8px;flex-wrap:wrap}
 .tabs button{padding:14px 0}
+a.btn{color:inherit;text-decoration:none;display:inline-block}
+.btn.danger{background:transparent;border-color:var(--acc);color:var(--acc)}
+.note.perigo{border:2px solid var(--acc)}
+.adminbox{border-style:dashed}
+.adminbox .acts{margin:6px 0 0}
+form label textarea{margin:0}
+form select{width:100%;box-sizing:border-box;font-size:17px;padding:12px 14px}
 </style></head>
 <body><div class="app"><main id="m"></main></div>
 <nav class="tabs" id="nav"></nav>
 <div id="toast" role="status"></div>
+<script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
-// ===== CONFIGURAÇÃO (edite aqui) =====
-const CONFIG = {
-  supabaseUrl: "https://paizsbesvosvoqrmrldt.supabase.co",         // ex.: https://abcdxyz.supabase.co
-  supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhaXpzYmVzdm9zdm9xcm1ybGR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQzMTE3NzgsImV4cCI6MjEwOTg4Nzc3OH0.5Op5gRuE9DWWocn-GC1nzbOnKRf0cdDRMkusiJH9McI",         // chave "anon public" (ou "publishable") do Supabase
-  email: "",               // e-mail para receber sugestões de correção (vazio = esconde o botão)
-  creditoGrafismo: "",     // ex.: "Grafismo criado por ... (povo/comunidade)"
-  creditoPalavras: ""      // ex.: "Palavras do curso de Tupi, com revisão do mestre ..."
-};
+// A configuração fica no arquivo config.js (assim, atualizar o site não apaga as suas chaves).
+const CONFIG = window.NHEE_CONFIG || {};
 const LINGUAS = {tpw:"Tupi antigo", gn:"Guarani (paraguaio)", gun:"Guarani mbyá", kgk:"Guarani kaiowá", yrl:"Nheengatu"};
 const PAPEL = {estudante:"Estudante", mestre:"Mestre", admin:"Administrador"};
 const PAPEL_DESC = {
   estudante: "Consulta as palavras e guarda favoritos.",
-  mestre: "Consulta as palavras, avalia e grava pronúncias (em breve).",
-  admin: "Gerencia os acessos e define quem é mestre ou estudante."
+  mestre: "Consulta as palavras e, em breve, avalia e grava pronúncias.",
+  admin: "Gerencia os acessos e as palavras: adiciona, edita, exclui e marca como avaliada pelo mestre."
 };
 const $ = id => document.getElementById(id);
 const norm = s => (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[’'`´ʼ‘]/g,"").replace(/\s+/g," ").trim();
@@ -109,11 +111,12 @@ const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&l
 let sb=null, ses=null, perfil=null, D=[], cats=[], tab="b", q="", cat="", sel=null, fav=new Set();
 let view="load", modo="login", msg="", msgTipo="err", emailEnv="", enr=null, chFactor=null, rec=false;
 let offline=false, admList=null, busy=false, again=false, gt=null;
+let form=null, confDel=false;   // form: {id} ao adicionar/editar | confDel: pedindo confirmação para excluir
 
 // ---------- palavras ----------
 function prep(j){
   const obs=j.observacao||"", c=/Categoria: ([^.,|]*)/.exec(obs), n=/A conferir \(nota do curso\) - ([\s\S]*)$/.exec(obs);
-  const e={id:j.id,p:j.palavra,v:j.variantes||[],pt:j.portugues||[],c:j.classe||"",cat:c?c[1].trim():"Outros",
+  const e={raw:j,id:j.id,lg:j.lingua||"tpw",ap:j.avaliado_por||"",ae:j.avaliado_em||"",p:j.palavra,v:j.variantes||[],pt:j.portugues||[],c:j.classe||"",cat:c?c[1].trim():"Outros",
     nota:n?n[1].trim():"",l:LINGUAS[j.lingua]||j.lingua||"",s:j.status||"pendente",au:(j.audios||[]).map(a=>a.arquivo)};
   e.n=norm(e.p); e.vn=e.v.map(norm); e.tn=e.pt.map(norm); return e;
 }
@@ -174,7 +177,7 @@ function toast(t){const e=$("toast");e.textContent=t;e.style.display="block";cle
 
 // ---------- telas de entrada ----------
 const vLoad=()=>`<p class="empty">Carregando…</p>`;
-const vConfig=()=>`<h1>Falta configurar</h1><span class="faixa l"></span><p>Abra o arquivo <b>index.html</b> e preencha <b>supabaseUrl</b> e <b>supabaseKey</b> no começo do script (veja o guia).</p>`;
+const vConfig=()=>`<h1>Falta configurar</h1><span class="faixa l"></span><p>Abra o arquivo <b>config.js</b> e preencha <b>supabaseUrl</b> e <b>supabaseKey</b> (veja o guia).</p>`;
 const vErro=()=>`<div id="msg">${msgHtml()}</div><div class="acts"><button class="btn pri" data-a="recheck">Tentar de novo</button></div>`;
 function vAuth(){
   if(modo==="enviado")return `<h1>Quase lá</h1><span class="faixa l"></span>
@@ -271,7 +274,8 @@ function results(){
 }
 function viewBuscar(){
   const pend=D.filter(e=>e.s==="pendente").length;
-  return `${logo()}<p class="sub">${D.length} palavras do curso.<br>${pend} aguardando o mestre.</p>
+  const add=souAdmin()?`<div class="acts"><button class="btn pri" data-a="nova">＋ Adicionar palavra</button></div>`:"";
+  return `${logo()}<p class="sub">${D.length} palavras do curso.<br>${pend} aguardando o mestre.</p>${add}
   <input type="search" id="q" placeholder="Busque em tupi ou português" value="${esc(q)}" autocomplete="off" aria-label="Buscar palavra">
   <div class="chips"><button class="chip" data-c="" aria-pressed="${cat===""}">Todas</button>${cats.map(c=>`<button class="chip" data-c="${esc(c)}" aria-pressed="${cat===c}">${esc(c)}</button>`).join("")}</div><div id="res"></div>`;
 }
@@ -307,7 +311,8 @@ function viewAdmin(){
   <h2 class="h2">Com acesso (${ok.length})</h2>${ok.map(linha).join("")}`;
 }
 function detail(e){
-  const badge=e.s==="validado"?`<span class="badge v">✔ Validado pelo mestre</span>`:e.s==="rejeitado"?`<span class="badge r">Rejeitado na revisão</span>`:`<span class="badge">Aguardando avaliação do mestre</span>`;
+  const quando=e.ae?new Date(e.ae+"T12:00:00").toLocaleDateString("pt-BR"):"";
+  const badge=e.s==="validado"?`<span class="badge v">✔ Avaliado pelo mestre${quando?" · "+esc(quando):""}</span>`:e.s==="rejeitado"?`<span class="badge r">Rejeitado na revisão</span>`:`<span class="badge">Aguardando avaliação do mestre</span>`;
   const mail=CONFIG.email?`<a class="btn" href="mailto:${esc(CONFIG.email)}?subject=${encodeURIComponent("Sugestão para: "+e.p)}&body=${encodeURIComponent("Palavra: "+e.p+"\n\nMinha sugestão:\n")}">Sugerir correção</a>`:"";
   return `<button class="back" data-a="back">‹ Voltar</button>
   <h1 class="big">${esc(e.p)}</h1>
@@ -317,7 +322,54 @@ function detail(e){
   <ul class="mean">${e.pt.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>
   ${e.nota?`<div class="note"><b>Nota do curso</b>${esc(e.nota)}</div>`:""}
   ${badge}
+  ${painelAdmin(e)}
   <div class="acts"><button class="btn pri" data-a="fav">${fav.has(e.id)?"♥ Favoritada":"♡ Favoritar"}</button>${e.au.length?`<button class="btn" data-a="play">▶ Ouvir pronúncia</button>`:`<button class="btn" disabled>Pronúncia em breve</button>`}${mail}</div>`;
+}
+
+const souAdmin=()=>!!(perfil&&perfil.papel==="admin"&&!offline);
+function painelAdmin(e){
+  if(!souAdmin())return "";
+  if(confDel)return `<div class="note perigo" role="alertdialog" aria-label="Confirmar exclusão"><b>Excluir palavra</b>Excluir “${esc(e.p)}” de forma definitiva? Isso não pode ser desfeito.
+    <div class="acts"><button class="btn danger" data-a="excluir-sim">Sim, excluir</button><button class="btn" data-a="excluir-nao">Cancelar</button></div></div>`;
+  const val=e.s==="validado";
+  return `<div class="note adminbox"><b>Administrador</b>
+    <div class="acts"><button class="btn ${val?"":"pri"}" data-a="avaliar" data-v="${val?"0":"1"}">${val?"Remover avaliação do mestre":"✔ Avaliado pelo mestre"}</button>
+    <button class="btn" data-a="editar">Editar</button>
+    <button class="btn danger" data-a="excluir">Excluir</button></div></div>`;
+}
+function vForm(){
+  const e=form.id!=null?D.find(x=>x.id===form.id):null;
+  const novoRegistro=!e, v=e||{p:"",v:[],pt:[],c:"",cat:"",nota:"",lg:"tpw"};
+  const catAtual=v.cat&&v.cat!=="Outros"?v.cat:(e?"Outros":"");
+  return `<button class="back" data-a="cancelar-form">‹ Cancelar</button>
+  <h1>${novoRegistro?"Nova palavra":"Editar palavra"}</h1><span class="faixa l"></span>
+  <form id="f-palavra" autocomplete="off">
+    <label>Palavra<input name="palavra" type="text" required maxlength="80" value="${esc(v.p)}"></label>
+    <label>Significados em português (um por linha)<textarea name="portugues" required rows="3" maxlength="600">${esc(v.pt.join("\n"))}</textarea></label>
+    <label>Também escrito (variantes, separadas por vírgula)<input name="variantes" type="text" maxlength="200" value="${esc(v.v.join(", "))}"></label>
+    <label>Língua<select name="lingua">${Object.keys(LINGUAS).map(k=>`<option value="${k}" ${v.lg===k?"selected":""}>${esc(LINGUAS[k])}</option>`).join("")}</select></label>
+    <label>Categoria<input name="categoria" type="text" list="lista-cats" maxlength="40" value="${esc(catAtual)}" placeholder="Ex.: Animais"></label>
+    <datalist id="lista-cats">${cats.map(c=>`<option value="${esc(c)}"></option>`).join("")}</datalist>
+    <label>Classe (opcional)<input name="classe" type="text" maxlength="40" value="${esc(v.c)}" placeholder="Ex.: substantivo, verbo"></label>
+    <label>Nota do curso (opcional)<textarea name="nota" rows="2" maxlength="500">${esc(v.nota)}</textarea></label>
+    ${e&&e.s==="validado"?`<p class="sub">Atenção: ao salvar uma edição, a palavra volta para “aguardando avaliação do mestre”.</p>`:""}
+    <div id="msg">${msgHtml()}</div>
+    <button class="btn pri" type="submit">Salvar palavra</button>
+  </form>`;
+}
+function dadosDoForm(f){
+  const g=n=>(f.elements[n].value||"").trim(), lista=(t,sep)=>t.split(sep).map(x=>x.trim()).filter(Boolean);
+  const e=form.id!=null?D.find(x=>x.id===form.id):null;
+  const base=Object.assign({},e?e.raw:{});
+  delete base.id; delete base.avaliado_por; delete base.avaliado_em;
+  const cat=g("categoria").replace(/[.,|]/g," ").replace(/\s+/g," ").trim()||"Outros";
+  const nota=g("nota");
+  return Object.assign(base,{
+    palavra:g("palavra"), lingua:g("lingua"), classe:g("classe"),
+    variantes:lista(g("variantes"),","), portugues:lista(f.elements.portugues.value,"\n"),
+    observacao:"Categoria: "+cat+(nota?". A conferir (nota do curso) - "+nota:""),
+    status:"pendente", audios:base.audios||[]
+  });
 }
 function logo(){return '<div class="logo logo-c" role="img" aria-label="Nhe’ẽ porã"></div><div class="logo logo-e" role="img" aria-label="Nhe’ẽ porã"></div>'}
 
@@ -328,7 +380,8 @@ function render(){
     const ts=[["b","Buscar"],["f","Favoritos"],["c","Conta"]];
     if(perfil.papel==="admin"&&!offline)ts.push(["a","Admin"]);
     nav.innerHTML=ts.map(t=>`<button data-t="${t[0]}" aria-current="${t[0]===tab&&sel===null}">${t[1]}</button>`).join("");
-    if(sel!==null){m.innerHTML=detail(D.find(e=>e.id===sel));return}
+    if(form!==null){m.innerHTML=vForm();return}
+    if(sel!==null){const e=D.find(x=>x.id===sel);if(e){m.innerHTML=detail(e);return}sel=null}
     if(tab==="a"&&admList===null)carregarAdm().then(render);
     m.innerHTML=(offline?'<div class="note">Sem internet: usando a cópia salva neste aparelho.</div>':"")+({b:viewBuscar,f:viewFav,c:viewConta,a:viewAdmin}[tab]||viewBuscar)();
     if(tab==="b")results();
@@ -350,7 +403,7 @@ async function gate(){
 async function gate2(){
   offline=false;
   const s=await sb.auth.getSession(); ses=s.data&&s.data.session;
-  if(!ses){D=[];perfil=null;sel=null;tab="b";q="";cat="";admList=null;enr=null;view="auth";return render()}
+  if(!ses){D=[];perfil=null;sel=null;form=null;confDel=false;tab="b";q="";cat="";admList=null;enr=null;view="auth";return render()}
   let aal=null,fac=null;
   try{aal=(await sb.auth.mfa.getAuthenticatorAssuranceLevel()).data}catch(e){}
   try{const f=await sb.auth.mfa.listFactors(); if(f.error)throw f.error; fac=f.data.totp||[]}catch(e){
@@ -416,6 +469,15 @@ document.addEventListener("submit",async ev=>{
       const fid=view==="enroll"&&enr?enr.id:chFactor;
       const r=await sb.auth.mfa.challengeAndVerify({factorId:fid,code:val("codigo").trim()});
       if(r.error)setMsg(traduz(r.error)); else {enr=null;msg="";agenda()}
+    }else if(f.id==="f-palavra"){
+      if(!souAdmin())return;
+      const dados=dadosDoForm(f);
+      if(!dados.palavra)return setMsg("A palavra não pode ficar vazia.");
+      if(!dados.portugues.length)return setMsg("Informe pelo menos um significado.");
+      const r=await sb.rpc("salvar_palavra",{p_id:form.id,p_dados:dados});
+      if(r.error)return setMsg(r.error.message||traduz(r.error));
+      const novoId=r.data; form=null; confDel=false; msg=""; sel=novoId;
+      await recarregar(); toast("Palavra salva.");
     }else if(f.id==="f-nova"){
       if(val("senha")!==val("senha2"))return setMsg("As senhas não são iguais.");
       const r=await sb.auth.updateUser({password:val("senha")});
@@ -437,11 +499,30 @@ document.addEventListener("click",async ev=>{
   const t=ev.target.closest("[data-id],[data-c],[data-a],[data-t],[data-modo]"); if(!t)return;
   const d=t.dataset;
   if(d.modo){modo=d.modo;msg="";return render()}
-  if(d.t){tab=d.t;sel=null;if(tab==="a")admList=null;render();return window.scrollTo(0,0)}
-  if(d.id!==undefined){sel=+d.id;render();return window.scrollTo(0,0)}
+  if(d.t){tab=d.t;sel=null;form=null;confDel=false;if(tab==="a")admList=null;render();return window.scrollTo(0,0)}
+  if(d.id!==undefined){sel=+d.id;confDel=false;render();return window.scrollTo(0,0)}
   if(d.c!==undefined){cat=d.c;document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed",String(c.dataset.c===cat)));return results()}
   const e=sel!==null?D.find(x=>x.id===sel):null;
-  if(d.a==="back"){sel=null;render()}
+  if(d.a==="back"){sel=null;confDel=false;render()}
+  else if(d.a==="nova"&&souAdmin()){form={id:null};msg="";render();window.scrollTo(0,0)}
+  else if(d.a==="editar"&&e&&souAdmin()){form={id:e.id};msg="";render();window.scrollTo(0,0)}
+  else if(d.a==="cancelar-form"){form=null;msg="";render()}
+  else if(d.a==="excluir"&&e&&souAdmin()){confDel=true;render()}
+  else if(d.a==="excluir-nao"){confDel=false;render()}
+  else if(d.a==="excluir-sim"&&e&&souAdmin()){
+    t.disabled=true;
+    const r=await sb.rpc("excluir_palavra",{p_id:e.id});
+    confDel=false;
+    if(r.error){toast(r.error.message||traduz(r.error));return render()}
+    sel=null; fav.delete(e.id); salvarFav();
+    await recarregar(); toast("Palavra excluída.");
+  }
+  else if(d.a==="avaliar"&&e&&souAdmin()){
+    t.disabled=true;
+    const r=await sb.rpc("definir_avaliacao",{p_id:e.id,p_validado:d.v==="1"});
+    if(r.error){toast(r.error.message||traduz(r.error));return render()}
+    await recarregar(); toast(d.v==="1"?"Marcada como avaliada pelo mestre.":"Avaliação removida.");
+  }
   else if(d.a==="fav"&&e){fav.has(e.id)?fav.delete(e.id):fav.add(e.id);salvarFav();render()}
   else if(d.a==="play"&&e){new Audio(e.au[0]).play().catch(()=>toast("Não foi possível tocar o áudio."))}
   else if(d.a==="sair")sair();
@@ -452,6 +533,10 @@ document.addEventListener("click",async ev=>{
     await carregarAdm();render();
   }
 });
+async function recarregar(){
+  try{await carregarPalavras()}catch(e){toast("Salvo, mas não foi possível atualizar a lista. Reabra o app.")}
+  render();
+}
 async function carregarAdm(){
   const r=await sb.from("perfis").select("id,email,nome,papel,ativo,criado_em").order("criado_em",{ascending:false});
   admList=r.error?[]:r.data;
