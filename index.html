@@ -82,6 +82,8 @@ select{font:inherit;font-size:15px;padding:8px 10px;border-radius:10px;border:2p
 .adm{align-items:flex-start;flex-wrap:wrap}.adm .quem{flex:1 1 200px;overflow-wrap:anywhere}.adm .ctl{display:flex;gap:8px;flex-wrap:wrap}
 .tabs button{padding:14px 0}
 a.btn{color:inherit;text-decoration:none;display:inline-block}
+.sobre p{margin:0 0 14px;line-height:1.6}
+.dedica{font:600 17px/1.4 "Instrument Sans",sans-serif;border-left:6px solid var(--acc);padding:6px 0 6px 14px;margin-top:22px!important}
 .btn.danger{background:transparent;border-color:var(--acc);color:var(--acc)}
 .note.perigo{border:2px solid var(--acc)}
 .adminbox{border-style:dashed}
@@ -291,10 +293,17 @@ function viewConta(){
   <div class="note"><b>Segurança</b>Verificação em dois fatores ativa. Esta conta é de uso pessoal e intransferível.</div>
   <div class="acts"><button class="btn" data-a="sair">Sair da conta</button></div>
   <h2 class="h2">Sobre</h2>
-  <p><b>Nhe’ẽ porã</b> é um app de consulta de palavras Tupi-Guarani, feito a partir de uma lista de estudo e revisado por um mestre indígena.</p>
-  <p>As palavras marcadas com ✔ foram validadas pelo mestre. As demais ainda aguardam avaliação e podem conter erros.</p>
-  <p>Grafismo: ${esc(CONFIG.creditoGrafismo||"a preencher")}</p>
-  <p>Palavras: ${esc(CONFIG.creditoPalavras||"a preencher")}</p>`;
+  <div class="sobre">
+  <p>Esse site é uma semente de resistência, memória e ancestralidade com o propósito de preservar aquilo que nos pertence: nossa cultura, nossa história e nossa língua. Não permitir que sejam apropriadas, apagadas ou distorcidas, mas mantê-las vivas, respeitadas e transmitidas com orgulho.</p>
+  <p>Queremos que as futuras gerações também possam receber esse sopro sagrado, conhecer suas raízes e reconhecer a força de sua ancestralidade. Que, por meio desse reencontro, encontrem caminhos de reconexão, fortalecimento e libertação das marcas deixadas pelo regime colonial, que por tanto tempo feriu nossos corpos, silenciou nossas vozes e tentou apagar nossas memórias, afetando nossas mentes e nossas almas.</p>
+  <p>Que este pequeno projeto seja mais uma semente nessa caminhada de resistência e retomada. Uma contribuição para que nossa língua não permaneça apenas registrada na memória de nosso ancestrais, mas continue viva na oralidade, nos ensinamentos, nos sentimentos e nas práticas de nosso ser.</p>
+  <p>Que ela seja falada, ensinada, vivenciada e transmitida de geração em geração, como herança, identidade e expressão de nossa existência.</p>
+  <p>Aweté katu a todos que, com amor, coragem e compromisso, seguem guardando, fortalecendo e mantendo vivas nossas tradições.</p>
+  <p>Que nossos ancestrais continuem soprando vida em nossa caminhada.</p>
+  <p class="dedica">🌿 Site dedicado ao Txembo'ea Luã Apyká</p>
+  </div>
+  ${CONFIG.creditoGrafismo?`<p class="sub">Grafismo: ${esc(CONFIG.creditoGrafismo)}</p>`:""}
+  ${CONFIG.creditoPalavras?`<p class="sub">Palavras: ${esc(CONFIG.creditoPalavras)}</p>`:""}`;
 }
 function viewAdmin(){
   if(admList===null)return `<h1>Acessos</h1><span class="faixa l"></span><p class="empty">Carregando…</p>`;
