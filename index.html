@@ -85,6 +85,8 @@ a.btn{color:inherit;text-decoration:none;display:inline-block}
 .sobre p{margin:0 0 14px;line-height:1.6}
 .dedica{font:600 17px/1.4 "Instrument Sans",sans-serif;border-left:6px solid var(--acc);padding:6px 0 6px 14px;margin-top:22px!important}
 .homenagem{display:block;width:100%;height:auto;border-radius:14px;margin:4px 0 8px;border:1px solid var(--line)}
+body.fundo::before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(rgba(20,21,28,.25),rgba(20,21,28,.5)),url(entrada.jpg) center/cover no-repeat}
+.vidro{background:rgba(246,236,220,.9);background:color-mix(in srgb,var(--bg) 88%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:18px;padding:18px 16px;margin:8px 0 24px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
 .hero{display:block;width:100%;height:auto;aspect-ratio:1105/625;object-fit:cover;border-radius:14px;margin:0 0 16px}
 .btn.danger{background:transparent;border-color:var(--acc);color:var(--acc)}
 .note.perigo{border:2px solid var(--acc)}
@@ -387,6 +389,7 @@ function logo(){return '<div class="logo logo-c" role="img" aria-label="Moviment
 
 function render(){
   const m=$("m"), nav=$("nav");
+  document.body.classList.toggle("fundo",["auth","challenge","pendente"].includes(view));
   nav.innerHTML="";
   if(view==="app"){
     const ts=[["b","Buscar"],["f","Favoritos"],["c","Conta"]];
@@ -400,8 +403,8 @@ function render(){
     return;
   }
   const f={load:vLoad,config:vConfig,auth:vAuth,enroll:vEnroll,challenge:vChallenge,novasenha:vNova,pendente:vPend,erro:vErro}[view]||vLoad;
-  const hero=(view==="auth"||view==="challenge"||view==="pendente")?'<img class="hero" src="entrada.jpg" alt="Ilustração: montanhas, rio e animais da floresta, da noite ao amanhecer">':"";
-  m.innerHTML=hero+(view==="pendente"?"":logo())+f();
+  const corpo=(view==="pendente"?"":logo())+f();
+  m.innerHTML=document.body.classList.contains("fundo")?'<div class="vidro">'+corpo+'</div>':corpo;
 }
 
 // ---------- fluxo de acesso ----------
