@@ -1,7 +1,7 @@
 {
-  "name": "Nhe’ẽ porã",
-  "short_name": "Nhe’ẽ porã",
-  "description": "Consulta de palavras Tupi-Guarani",
+  "name": "Movimento Ancestral",
+  "short_name": "Movimento Ancestral",
+  "description": "Língua, cultura e memória Tupi-Guarani",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

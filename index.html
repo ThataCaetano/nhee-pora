@@ -6,7 +6,7 @@
 <link rel="icon" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="description" content="Consulta de palavras Tupi-Guarani">
-<title>Nhe’ẽ porã</title>
+<title>Movimento Ancestral</title>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#E9DAC5;--card:#F6ECDC;--ink:#1A1C26;--mute:#6B5645;--line:#CDB89B;--acc:#C8401F;--leaf:#8C5330;--chip:#DCC6A8;--jen:#1A1C26;--areia:#F0E4D2;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -59,8 +59,8 @@ textarea{width:100%;box-sizing:border-box;min-height:80px;font:inherit;padding:1
 .h2{font:600 16px/1.3 "Instrument Sans",sans-serif;margin:22px 0 6px}
 .pes{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line)}
 .papel{display:inline-block;background:var(--jen);color:var(--areia);border-radius:999px;padding:4px 12px;font-size:13px}
-.logo{display:block;width:100%;aspect-ratio:900/304;margin:0 0 14px;background:center/contain no-repeat}
-.logo-c{background-image:url(logo_claro.png)}.logo-e{display:none;background-image:url(logo_escuro.png)}
+.logo{display:block;width:100%;aspect-ratio:900/344;margin:0 0 14px;background:center/contain no-repeat}
+.logo-c{background-image:url(logo_ma_claro.png)}.logo-e{display:none;background-image:url(logo_ma_escuro.png)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .logo-c{display:none}:root:not([data-theme="light"]) .logo-e{display:block}}
 :root[data-theme="dark"] .logo-c{display:none}:root[data-theme="dark"] .logo-e{display:block}
 
@@ -85,6 +85,7 @@ a.btn{color:inherit;text-decoration:none;display:inline-block}
 .sobre p{margin:0 0 14px;line-height:1.6}
 .dedica{font:600 17px/1.4 "Instrument Sans",sans-serif;border-left:6px solid var(--acc);padding:6px 0 6px 14px;margin-top:22px!important}
 .homenagem{display:block;width:100%;height:auto;border-radius:14px;margin:4px 0 8px;border:1px solid var(--line)}
+.hero{display:block;width:100%;height:auto;aspect-ratio:1105/625;object-fit:cover;border-radius:14px;margin:0 0 16px}
 .btn.danger{background:transparent;border-color:var(--acc);color:var(--acc)}
 .note.perigo{border:2px solid var(--acc)}
 .adminbox{border-style:dashed}
@@ -382,7 +383,7 @@ function dadosDoForm(f){
     status:"pendente", audios:base.audios||[]
   });
 }
-function logo(){return '<div class="logo logo-c" role="img" aria-label="Nhe’ẽ porã"></div><div class="logo logo-e" role="img" aria-label="Nhe’ẽ porã"></div>'}
+function logo(){return '<div class="logo logo-c" role="img" aria-label="Movimento Ancestral"></div><div class="logo logo-e" role="img" aria-label="Movimento Ancestral"></div>'}
 
 function render(){
   const m=$("m"), nav=$("nav");
@@ -399,7 +400,8 @@ function render(){
     return;
   }
   const f={load:vLoad,config:vConfig,auth:vAuth,enroll:vEnroll,challenge:vChallenge,novasenha:vNova,pendente:vPend,erro:vErro}[view]||vLoad;
-  m.innerHTML=(view==="pendente"?"":logo())+f();
+  const hero=(view==="auth"||view==="challenge"||view==="pendente")?'<img class="hero" src="entrada.jpg" alt="Ilustração: montanhas, rio e animais da floresta, da noite ao amanhecer">':"";
+  m.innerHTML=hero+(view==="pendente"?"":logo())+f();
 }
 
 // ---------- fluxo de acesso ----------
@@ -440,7 +442,7 @@ async function iniciarEnroll(){
   try{
     const l=await sb.auth.mfa.listFactors();
     for(const f of ((l.data&&l.data.all)||[]))if(f.status!=="verified")await sb.auth.mfa.unenroll({factorId:f.id});
-    const r=await sb.auth.mfa.enroll({factorType:"totp",friendlyName:"Nhe-e-pora "+Date.now()});
+    const r=await sb.auth.mfa.enroll({factorType:"totp",friendlyName:"Movimento Ancestral "+Date.now()});
     if(r.error)throw r.error;
     enr={id:r.data.id,qr:r.data.totp.qr_code,secret:r.data.totp.secret};
     render();

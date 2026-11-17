@@ -1,8 +1,8 @@
 // Guarda o site no aparelho para abrir sem internet. NUNCA guarda respostas do banco (Supabase).
 // Páginas, scripts e configuração: tenta a internet primeiro (sempre a versão mais nova) e usa a cópia só se estiver sem rede.
-// Ao publicar uma versão nova, troque o número abaixo (v3 -> v4).
-const V = "nhee-v3";
-const CORE = ["./", "index.html", "config.js", "manifest.json", "logo_claro.png", "logo_escuro.png", "faixa.png",
+// Ao publicar uma versão nova, troque o número abaixo (v4 -> v5).
+const V = "nhee-v4";
+const CORE = ["./", "index.html", "config.js", "manifest.json", "logo_ma_claro.png", "logo_ma_escuro.png", "entrada.jpg", "faixa.png",
   "icon-192.png", "icon-512.png"];
 const PERMITIDOS = ["cdn.jsdelivr.net", "fonts.googleapis.com", "fonts.gstatic.com"];
 self.addEventListener("install", e => {
